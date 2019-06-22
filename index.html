@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Snake Game</title>
+
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+
+    <!------------------------------ Libraries ------------------------------->
+    <script src="scripts/Libraries/p5.min.js"></script>
+    <script src="scripts/Libraries/Neural Network/Matrix.js"></script>
+    <script src="scripts/Libraries/Neural Network/Neural Network.js"></script>
+</head>
+
+<body>
+    <span id = "container">
+        <span id = "state-label" class = "text center">Game Over</span> 
+        <span id = "highest-score-text" class = "text center">Highest Score : <span id = "highest-score" class = "text">0</span></span>
+        <span id = "game-score" class = "center">
+            <div id = "score-text" class = "text">Score</div>
+            <div id = "score" class = "text">0</div>
+        </span>
+        <button id = "play-again" class = "text center" onclick = "play()" >Play Again</button>
+        <span id = "generation-info" class = "text center">
+            <span class = "text center">Generation : <span id = "generation" class = "text">0</span></span>
+        </span>
+        <span class="slider-container center">
+            <span class = "text speed-text"> Speed </span>
+            <input type="range" min = "1" max = "20" value="1" class="slider" id="myRange">
+        </span>
+        <button id = "download-best" class = "text center" onclick = "downloadBest()" >Download Best</button>
+    </span>
+
+    <div id = "snake-canvas"></div>
+</body>
+
+<script src = "scripts/Snake.js"></script>
+<script src = "scripts/Population.js"></script>
+<script src = "scripts/main.js"></script>
+
+</html>
