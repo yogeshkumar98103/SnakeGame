@@ -18,7 +18,7 @@ class Population{
 
     initializePopulation(){
         for(let i = 0; i < this.popCount; i++){
-            this.population[i] = new Snake(false, food);
+            this.population[i] = new Snake();
         }
     }
 
@@ -41,10 +41,8 @@ class Population{
         this.maxFitnessIndex = maxFitnessIndex;
 
         // Save the best member form current generation before creating next Generation
-        let brain = this.population[this.maxFitnessIndex].brain.clone();
-        let food = this.population[this.maxFitnessIndex].food;
-        this.bestInCurrentGeneration = new Snake(false, food, brain);
-
+        this.bestInCurrentGeneration = this.population[this.maxFitnessIndex].clone();
+    
         // Calculate the percentage of being selected as parent for next Generation
         for(let member of this.population){
             member.calcPercentageFitness(sum);
@@ -55,7 +53,7 @@ class Population{
     createNewGeneration(){
         let newPopulation = [];
         
-        newPopulation[0] = this.bestOfAll;
+        newPopulation[0] = this.bestInCurrentGeneration.clone();
         for(let i = 1; i < this.popCount; i++){
             // Select parent
             let parent1 = this.chooseParent();
@@ -65,7 +63,7 @@ class Population{
             let child = parent1.crossOver(parent2);
 
             // Mutate Child
-            child.brain.mutate();
+            child.brain.mutate(this.mutationRate);
 
             // Add this child to population
             newPopulation[i] = child;
@@ -75,7 +73,7 @@ class Population{
         score.innerHTML = 0;
         this.generations++;
         this.allDead = false;
-        generateFood(true);
+        // generateFood(true);
     }
 
 
@@ -97,9 +95,7 @@ class Population{
         // Check if this generation can break records
         if(this.maxFitnessInCurrentGeneration > this.bestScore){
             this.bestScore = this.maxFitnessInCurrentGeneration;
-            let brain = this.population[this.maxFitnessIndex].brain.clone();
-            let food = this.population[this.maxFitnessIndex].food;
-            this.bestOfAll = new Snake(false, food, brain);
+            this.bestOfAll = this.population[this.maxFitnessIndex].clone();
         }
     }
 
@@ -116,6 +112,14 @@ class Population{
 
     // This function displays the best memeber of previous generation
     showBest(){
-        console.log(this.bestInCurrentGeneration.run(true));
+        this.bestInCurrentGeneration.run(true);
     }
+}
+
+function cloneVectorList(list){
+    let newList = [];
+    for(let vector of list){
+        newList.push(vector.copy());
+    }
+    return newList;
 }

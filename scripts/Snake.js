@@ -1,297 +1,219 @@
 const blockSize = 20;
 const learningRate = 0.2;
-const shouldBlink = false;
-const addedLifeOnEating = 100;
 
-// These are directions where snake can see
-let directions = [];
-function createDirections(){
-    let dirVectors = [[1,0], [-1,0], [0,1], [0,-1], [1,1], [-1,-1], [1,-1],[-1,1]];
-
-    for(let i = 0; i < 8; i++){
-        dirVectors[i][0] *= blockSize;
-        dirVectors[i][1] *= blockSize;
-        directions.push(createVector(dirVectors[i][0], dirVectors[i][1]));
-    }
-}
-let food = []
-function generateFood(regenerateFood = false){
-    if(regenerateFood){
-        food = [];
-    }
-    for(let i = 0; i < 200; i++){
-        let maxX = width/blockSize;
-        let maxY = height/blockSize;
-        let x = Math.floor(random(0,maxX)) * blockSize;
-        let y = Math.floor(random(0,maxY)) * blockSize;
-        x = constrain(x, 0, width - blockSize);
-        y = constrain(y, 0, height - blockSize);
-
-        let newFood = createVector(x,y);
-        food.push(newFood);
-    }
-}
+// ===============================================================================
+//                                   SNAKE
+// ===============================================================================
 
 class Snake{
-    constructor(generateOwnFood, food , brain){
-        this.velocityX = 1;
-        this.velocityY = 0;
+    constructor(brain = null, foodList = null){
+        this.initialiseSnakePosition();
+        this.velocity = createVector(blockSize,0);
+        this.food = createVector();
 
-        this.size = 1;
-        this.tail = [];
-
-        this.ateFood = false; 
-        this.isAlive = true;
+        this.score = 1;
+        this.body = [];
 
         this.fitness = 0;
         this.percentageFitness = 0;
-        this.lifeTime = 0;
-        this.lefttoLive = 200;
 
-        this.alternateColor = 1;
+        this.isAlive = true;
+        this.age = 0;
+        this.remainingLife = 200;
 
-        if(brain){
-            this.brain = brain;
-        }
-        else{
-            this.brain = new NeuralNetwork([24,16,16,4],learningRate);
-        }
+        if(brain !== null) this.brain = brain;
+        else this.brain = new NeuralNetwork([24,16,16,4],learningRate);
 
         // It contains the input to Neural Network
         this.vision = [];
 
-        this.generateOwnFood = false;
-        // this.randomSnakeLocation();
-        this.snakeX = 440;
-        this.snakeY = 360;
-        this.size = 3;
-        this.tail[0] = [420,360];
-        this.tail[1] = [400,360];
-
-        if(generateOwnFood){
-            this.randomFoodLocation();
+        if(foodList != null){
+            this.replaySnake = true;
+            this.foodList = foodList;
+            this.foodCounter = 0;
         }
         else{
-            this.food = food;
-            this.generateOwnFood = false;
-            this.foodCounter = 0;
-            this.nextFoodLocation();
+            this.replaySnake = false;
+            this.foodList = [];
         }
+
+        this.generateNewFood();
     }
 
-    randomSnakeLocation(){
-        let maxX = width/blockSize;
-        let maxY = height/blockSize;
-        let x = Math.floor(random(0.25*maxX, 0.75*maxX)) * blockSize;
-        let y = Math.floor(random(0.25*maxY, 0.75*maxY)) * blockSize;
-        
-        this.snakeX = x;
-        this.snakeY = y;
+    initialiseSnakePosition(){
+        this.score = 3;
+        this.head = createVector(440, 360);
+        this.body[0] = createVector(this.head.x + blockSize, this.head.y);
+        this.body[1] = createVector(this.head.x + blockSize, this.head.y);
     }
 
-    randomFoodLocation(){
-        let maxX = width/blockSize;
-        let maxY = height/blockSize;
-        let x = Math.floor(random(0,maxX)) * blockSize;
-        let y = Math.floor(random(0,maxY)) * blockSize;
-        x = constrain(x, 0, width - blockSize);
-        y = constrain(y, 0, height - blockSize);
 
-        if(x === this.snakeX && y === this.snakeY || x === this.foodX && y === this.foodY){
-            this.randomFoodLocation();
-            return;
-        }
+    // ===============================================================================
+    //                          Simulation Controller
+    // ===============================================================================
 
-        this.foodX = x;
-        this.foodY = y;
-
-        for(let i = 0; i < this.tail.length; i++){
-            if(this.foodX === this.tail[i].x && this.foodY === this.tail[i].y){
-                this.randomFoodLocation();
-                return;
-            }
-        }
-    }
-
-    nextFoodLocation(){
-        let x = this.food[this.foodCounter].x;
-        let y = this.food[this.foodCounter].y;
-        this.foodCounter++;
-        if(this.foodCounter === this.food.length){
-            generateFood();
-        }
-
-        if(x === this.snakeX && y === this.snakeY || x === this.foodX && y === this.foodY){
-            this.nextFoodLocation();
-            return;
-        }
-
-        this.foodX = x;
-        this.foodY = y;
-
-        for(let i = 0; i < this.tail.length; i++){
-            if(this.foodX === this.tail[i].x && this.foodY === this.tail[i].y){
-                this.nextFoodLocation();
-                return;
-            }
-        }
-    }
-
-    run(drawToScreen){
-        let x = "Initial"
+    runSimulation(displaySnake){
         if(this.isAlive && !pauseGameTriggered){
-            x = this.think();
-            this.eatFood();
-            this.update();
-            if(this.isAlive){
-                this.checkGameOver();
-            }
+            this.see();
+            this.think();
+            this.move();
+            this.checkIfDead();
         }
 
-        if(drawToScreen){
-            this.draw();
+        if(displaySnake){
+            this.display();
         }
-        return x;
     }
 
-    draw(){
-        // Draw food
-        fill(250,0,0);
-        rect(this.foodX, this.foodY, blockSize, blockSize);
+    display(){
+        // Draw Food
+        this.food.display();
 
         // Draw Snake
         fill(250);
-        if(gameOver && shouldBlink){
-            // Alternate color of snake;
-            if(this.alternateColor >= 1 && this.alternateColor <= fRate/2){
-                fill(250,0,0);
-            }
-            else if(this.alternateColor > fRate/2 && this.alternateColor <= fRate){
-                fill(250);
-            }
-            this.alternateColor = (this.alternateColor + 1) % fRate;
-            
-        }
-        for(let i = 0; i < this.tail.length; i++){
-            rect(this.tail[i].x, this.tail[i].y, blockSize, blockSize);
+        for(let i = 0; i < this.body.length; i++){
+            rect(this.body[i].x, this.body[i].y, blockSize, blockSize);
         }
 
-        rect(this.snakeX,this.snakeY,blockSize,blockSize);
+        rect(this.head.x, this.head.y ,blockSize,blockSize);
     }
 
-    update(){
-        if(!this.ateFood && this.tail.length > 0){
-            let i;
-            for(i = 0; i < this.tail.length - 1; i++){
-                this.tail[i] = this.tail[i+1];
-            }
-            this.tail[i] = createVector(this.snakeX, this.snakeY);
-        }
-        else{
-            this.ateFood = false;
-        }
 
-        this.snakeX += this.velocityX * blockSize;
-        this.snakeY += this.velocityY * blockSize;
-
-        this.lifeTime += 1;
-        this.lefttoLive -= 1;
-    }
+    // ===============================================================================
+    //                          Eat Food
+    // ===============================================================================
 
     eatFood(){
-        let dx = Math.abs(this.snakeX - this.foodX);
-        let dy = Math.abs(this.snakeY - this.foodY);
-        if((dx == 0 && dy == blockSize && this.velocityX == 0) || (dy == 0 && dx == blockSize && this.velocityY == 0)){
-            // Snake can eat food;
-            this.tail.push(createVector(this.snakeX, this.snakeY));
-            this.lefttoLive += addedLifeOnEating;
-            score.innerHTML = this.size - 3;
-            this.size++;
-            this.ateFood = true;
-            if(this.generateOwnFood){
-                this.randomFoodLocation();
+        // This function is triggered when snake eats food
+
+        // Increase the size of snake
+        let len = this.body.length - 1;
+        if(len >= 0) {
+            this.body.push(createVector(this.body[len]));
+        } else {
+            this.body.push(createVector(this.head));
+        }
+
+        // Increase Remaining Life
+        if(this.remainingLife < 500){
+            if(this.remainingLife > 400){
+                this.remainingLife = 500;
             }
             else{
-                this.nextFoodLocation();
+                this.remainingLife += 100;
             }
         }
+
+        // Update Score
+        score.innerHTML = this.score;
+
+        // Generate More Food
+        this.generateNewFood();
     }
 
-    lookForFood(position){
-        return (position.x === this.foodX && position.y === this.foodY);
-    }
-
-    isLifeTimeOver(){
-        // Useful to teach to eat
-        if(this.lefttoLive <= 0){
-            this.isAlive = false;
+    generateNewFood(){
+        if(replaySnake){
+            this.food = this.foodList[this.foodCounter];
+            this.foodCounter++;
         }
-        if(this.size === 15){
-            addedLifeOnEating = 0;
+        else{
+            let food = new Food();
+
+            while(food.position.equals(this.head) || collideWithBody(food)){
+                food = new Food();
+            }
+
+            this.food = food;
+            this.foodList[this.foodCounter] = this.food;
         }
     }
 
-    detectCollisionWithTail(x,y){
-        for(let i = 0; i < this.tail.length; i++){
-            if(this.tail[i].x === x && this.tail[i].y === y){
-                // Sanke ate iteself
+    // ===============================================================================
+    //                             Movement
+    // ===============================================================================
+
+    move(){
+        this.age++;
+        this.remainingLife--;
+        
+        if(collideWithFood(this.head)) {
+            eatFood();
+        }
+
+        this.shiftBody();
+    }
+
+    shiftBody() { 
+        let next, current;
+        next = this.head.copy();
+        this.head.add(this.velocity);
+        for(let i = 0; i < this.body.length; i++) {
+           current = this.body[i].copy();
+           this.body[i] = next;
+           next = current;
+        } 
+    }
+
+    moveUp(){
+        if(this.velocity.y !== blockSize){
+            this.velocity.x = 0;
+            this.velocity.y = -blockSize;
+        }
+    }
+
+    moveDown(){
+        if(this.velocity.y !== -blockSize){
+            this.velocity.x = 0;
+            this.velocity.y = blockSize;
+        }
+    }
+
+    moveLeft(){
+        if(this.velocity.x === blockSize){
+            this.velocity.x = -blockSize;
+            this.velocity.y = 0;
+        }
+    }
+
+    moveRight(){
+        if(this.velocity.x === -blockSize){
+            this.velocity.x = blockSize;
+            this.velocity.y = 0;
+        }
+    }
+
+    // ===============================================================================
+    //                             Collision
+    // ===============================================================================
+    collideWithBody(position){
+        for(let i = 0; i < this.body.length; i++){
+            if(this.body[i].equals(position)){
                 return true;
             }
         }
         return false;
     }
 
-    detectCollisionWithWall(x,y){
-        return (x < 0 || x >= width || y < 0 || y >= height);
+    collideWithWall(position){
+        return (position.x < 0 || position.x >= width || position.y < 0 || y >= position.height);
     }
 
-    checkGameOver(){
-        this.isAlive = !this.detectCollisionWithTail(this.snakeX, this.snakeY);
-        this.isAlive = !this.detectCollisionWithWall(this.snakeX, this.snakeY);
-        if(this.size <= 15){
-            this.isLifeTimeOver();
-        }
+    collideWithFood(position){
+        return this.food.equals(position);
     }
 
-    moveUp(){
-        if(this.velocityY === 1){
-            this.isAlive = false;
-        }
-        this.velocityX = 0;
-        this.velocityY = -1;
-    }
 
-    moveDown(){
-        if(this.velocityY === -1){
-            this.isAlive = false;
-        }
-        this.velocityX = 0;
-        this.velocityY = 1;
-    }
-
-    moveLeft(){
-        if(this.velocityX === 1){
-            this.isAlive = false;
-        }
-        this.velocityX = -1;
-        this.velocityY = 0;
-    }
-
-    moveRight(){
-        if(this.velocityX === -1){
-            this.isAlive = false;
-        }
-        this.velocityX = 1;
-        this.velocityY = 0;
-    }
+    // ===============================================================================
+    //                             Natural Selection
+    // ===============================================================================
 
     calcFitness(){
-        if(this.size < 5){
-            this.fitness = Math.pow(this.lifeTime, 2) * Math.pow(4, this.size);
+        if(this.score < 10){
+            this.fitness = Math.pow(this.age, 2) * Math.pow(2, this.score);
         }
         else{
-            this.fitness = Math.pow(this.lifeTime, 2) * Math.pow(4, 10);
-            this.fitness *= (this.size - 9);
+            this.fitness = Math.pow(this.age, 2) * Math.pow(2, 10);
+            this.fitness *= (this.score - 9);
         }
     }
 
@@ -299,51 +221,11 @@ class Snake{
         this.percentageFitness = (this.fitness * 100)/sum;
     }
 
-    see(){
-        let i = 0;
-        let result = [];
-        for(let direction of directions){
-            result = this.lookInDirection(direction);
-            this.vision[i++] = result[0];
-            this.vision[i++] = result[1];
-            this.vision[i++] = result[2];
-        }
-    }
-
-    lookInDirection(direction){
-        let positionToSee = createVector(this.snakeX + direction.x, this.snakeY + direction.y);
-        let distance = 1;
-        let resultInThisDirection = [];
-        let encounteredFood = false;
-        let encounteredTail = false;
-
-        resultInThisDirection[0] = 0;
-        resultInThisDirection[1] = 0;
-
-        // While we encounter wall in this direction
-        while(!this.detectCollisionWithWall(positionToSee.x, positionToSee.y)){
-            if(!encounteredFood && this.lookForFood(positionToSee)){
-                encounteredFood = true;
-                resultInThisDirection[0] = 1;
-            }
-            if(!encounteredTail && this.detectCollisionWithTail(positionToSee.x, positionToSee.y)){
-                encounteredTail = true;
-                resultInThisDirection[1] = 1/distance;
-            }
-
-            // Move forward in this direction
-            distance += 1;
-            positionToSee.add(direction);
-        }
-
-        // Set the distance from wall
-        resultInThisDirection[2] = 1/distance;
-
-        return resultInThisDirection;
-    }
+    // ===============================================================================
+    //                              Decision Making
+    // ===============================================================================
 
     think(){
-        this.see();
         let decision = this.brain.makeDecision(this.vision);
         let maxIndex = 0;
         let maxValue = decision[0];
@@ -359,20 +241,87 @@ class Snake{
             case 1 : this.moveDown();       break;
             case 2 : this.moveLeft();       break;
             case 3 : this.moveRight();      break;
-            default : console.log("DEFAULT");
         }
-        return maxIndex;
     }
 
-    clone(){
+    see(){
+        let i = 0;
+        let result = [];
+        for(let direction of directions){
+            result = this.lookInDirection(direction);
+            this.vision[i++] = result[0];
+            this.vision[i++] = result[1];
+            this.vision[i++] = result[2];
+        }
+    }
+
+    lookInDirection(direction){
+        let positionToSee = p5.Vector.add(this.head, direction);
+        let distance = 1;
+        let resultInThisDirection = [];
+        let encounteredFood = false;
+        let encounteredTail = false;
+
+        resultInThisDirection[0] = 0;
+        resultInThisDirection[1] = 0;
+
+        // While we encounter wall in this direction
+        while(!this.collideWithWall(positionToSee.x, positionToSee.y)){
+            if(!encounteredFood && this.collideWithFood(positionToSee)){
+                encounteredFood = true;
+                if(this.replaySnake){
+                    console.log("Saw food ", this.isAlive);
+                }
+                resultInThisDirection[0] = 1;
+            }
+            if(!encounteredTail && this.collideWithBody(positionToSee)){
+                encounteredTail = true;
+                resultInThisDirection[1] = 1/distance;
+            }
+
+            // Move forward in this direction
+            distance += 1;
+            positionToSee.add(direction);
+        }
+
+        // Set the distance from wall
+        resultInThisDirection[2] = 1/distance;
+
+        return resultInThisDirection;
+    }
+
+    // ===============================================================================
+    //                            Genetic Manipulation
+    // ===============================================================================
+
+    clone(replay = false){
         let clonedBrain = this.brain.clone();
-        let clonedSnake = new Snake(false, food, clonedBrain);
+        let clonedSnake;
+        if(replay){
+            clonedSnake = new Snake(clonedBrain, cloneVectorList(this.foodList));   
+        }
+        else{
+            clonedSnake = new Snake(clonedBrain);
+        }
         return clonedSnake;
     }
 
     crossOver(partner){
         let childBrain = this.brain.crossOver(partner.brain);
-        let childSnake = new Snake(false, food, childBrain);
+        let childSnake = new Snake(childBrain);
         return childSnake;
+    }
+
+    // ===============================================================================
+    //                                  Game Over
+    // ===============================================================================
+
+    checkIfDead(){
+        if(this.collideWithBody(this.head) || this.collideWithWall(this.head)){
+            this.isAlive = false;
+        }
+        if(this.remainingLife <= 0){
+            this.isAlive = false;
+        }
     }
 }

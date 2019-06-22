@@ -1,5 +1,5 @@
 let population;
-let mutationRate = 0.1;
+let mutationRate = 0.05;
 let popCount = 2000;
 
 let gameOver = false;
@@ -21,7 +21,7 @@ function setup(){
     canvas.parent('snake-canvas');
     frameRate(fRate);
     createDirections();
-    generateFood();
+    // generateFood();
     population = new Population(popCount, mutationRate);
 
     strokeWeight(4);
@@ -34,23 +34,31 @@ function setup(){
      }
     population.calcFitness();
     population.evaluate();
-    population.createNewGeneration();
 }
 
 function draw(){
     background('#333');
 
     if(population.bestInCurrentGeneration){
-        for(let i = 0; i < speed; i++){
-            population.showBest(true);
-        }
+        population.showBest();
+
         if(!population.bestInCurrentGeneration.isAlive){
-            population.calcFitness();
-            population.evaluate();
+            console.log("dead");
             population.createNewGeneration();
             while(!population.allDead){
                 population.run(false);
             }
+            population.calcFitness();
+            let maxPercentage = population.population[0].percentageFitness;
+            let maxIndex = 0;
+            for(let i = 0; i < popCount; i++){
+                if(maxPercentage < population.population[i].percentageFitness){
+                    maxPercentage = population.population[i].percentageFitness;
+                    maxIndex = i;
+                }
+            }
+            console.log(maxIndex, maxPercentage);
+            population.evaluate();
         }
     }
     // Handle Game Paused
@@ -162,6 +170,18 @@ function play(){
         gameOver = false;
 
         snake = new Snake();
+    }
+}
+
+// These are directions where snake can see
+let directions = [];
+function createDirections(){
+    let dirVectors = [[1,0], [-1,0], [0,1], [0,-1], [1,1], [-1,-1], [1,-1],[-1,1]];
+
+    for(let i = 0; i < 8; i++){
+        dirVectors[i][0] *= blockSize;
+        dirVectors[i][1] *= blockSize;
+        directions.push(createVector(dirVectors[i][0], dirVectors[i][1]));
     }
 }
 

@@ -157,35 +157,35 @@ class Matrix{
         return clonedMatrix;
     }
 
-    crossOver(partnerMatrix){
-        let randR = Math.floor(random(this.rows));
-        let randC = Math.floor(random(this.cols));
-
+    crossOver(partner){
         let childMatrix = new Matrix(this.rows, this.cols);
-        for(let i = 0; i < this.rows; i++){
-            for(let j = 0; j < this.cols; j++){
-                if(i < randR || (i === randR && j <= randC)){
-                    childMatrix.data[i][j] = this.data[i][j];
-                }
-                else{
-                    childMatrix.data[i][j] = partnerMatrix.data[i][j];
+      
+        let randR = Math.floor(Math.random() * rows);
+        let randC = Math.floor(Math.random() * cols);
+        
+        for(let i = 0; i < this.rows; i++) {
+            for(let j = 0;  j < this.cols; j++) {
+                if((i  < randR) || (i == randR && j <= randC)) {
+                    childMatrix.data[i][j] = this.data[i][j]; 
+                } else {
+                    childMatrix.data[i][j] = partner.data[i][j];
                 }
             }
         }
-
         return childMatrix;
     }
 
     mutate(mutationRate, amount){
         this.map((val) => {
-            if(random() < mutationRate){
-                let newVal = val + randomGaussi(0,amount);
+            if(Math.random() < mutationRate){
+                let newVal = val + randomGaussian(0,amount);
                 if(newVal > 1){
                     newVal = 1;
                 }
                 else if(newVal < -1){
                     newVal = -1;
                 }
+                return newVal;
             }
             return val;
         })
