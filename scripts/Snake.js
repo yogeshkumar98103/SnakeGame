@@ -1,15 +1,10 @@
-const blockSize = 20;
-const learningRate = 0.2;
-
 // ===============================================================================
 //                                   SNAKE
 // ===============================================================================
 
 class Snake{
     constructor(brain = null, foodList = null){
-        this.initialiseSnakePosition();
         this.velocity = createVector(blockSize,0);
-        this.food = createVector();
 
         this.score = 1;
         this.body = [];
@@ -19,9 +14,9 @@ class Snake{
 
         this.isAlive = true;
         this.age = 0;
-        this.remainingLife = 200;
+        this.remainingLife = 300;
 
-        if(brain !== null) this.brain = brain;
+        if(brain) this.brain = brain;
         else this.brain = new NeuralNetwork([24,16,16,4],learningRate);
 
         // It contains the input to Neural Network
@@ -37,14 +32,25 @@ class Snake{
             this.foodList = [];
         }
 
+        if(strategy == A_STAR){
+            this.moveIndex = 0;
+            this.path = [];
+            this.pathIndex = 0;
+        }
+
+        this.initialiseSnakePosition();
         this.generateNewFood();
+    }
+
+    set type(val){
+        this.snakeType = val;
     }
 
     initialiseSnakePosition(){
         this.score = 3;
         this.head = createVector(440, 360);
-        this.body[0] = createVector(this.head.x + blockSize, this.head.y);
-        this.body[1] = createVector(this.head.x + blockSize, this.head.y);
+        this.body[0] = createVector(this.head.x - blockSize, this.head.y);
+        this.body[1] = createVector(this.head.x - 2*blockSize, this.head.y);
     }
 
 
@@ -78,6 +84,20 @@ class Snake{
         rect(this.head.x, this.head.y ,blockSize,blockSize);
     }
 
+    run(){
+        if(this.isAlive && !pauseGameTriggered){
+            if(strategy == GENETIC_ALGORITHM){
+                if(this.snakeType != HUMAN_PLAYING){
+                    this.see();
+                    this.think();
+                }
+            }
+            
+            this.move();
+            this.checkIfDead();
+        }
+        this.display();
+    }
 
     // ===============================================================================
     //                          Eat Food
@@ -89,42 +109,44 @@ class Snake{
         // Increase the size of snake
         let len = this.body.length - 1;
         if(len >= 0) {
-            this.body.push(createVector(this.body[len]));
+            this.body.push(this.body[len]);
         } else {
-            this.body.push(createVector(this.head));
+            this.body.push(this.head);
         }
 
         // Increase Remaining Life
-        if(this.remainingLife < 500){
-            if(this.remainingLife > 400){
-                this.remainingLife = 500;
-            }
-            else{
-                this.remainingLife += 100;
+        if(this.snakeType == AI_LEARNING){
+            if(this.remainingLife < 600){
+                if(this.remainingLife > 500){
+                    this.remainingLife = 600;
+                }
+                else{
+                    this.remainingLife += 200;
+                }
             }
         }
 
         // Update Score
-        score.innerHTML = this.score;
+        score.innerHTML = ++this.score;
 
         // Generate More Food
         this.generateNewFood();
     }
 
     generateNewFood(){
-        if(replaySnake){
+        if(this.replaySnake){
             this.food = this.foodList[this.foodCounter];
             this.foodCounter++;
         }
         else{
             let food = new Food();
 
-            while(food.position.equals(this.head) || collideWithBody(food)){
+            while(food.position.equals(this.head) || this.collideWithBody(food.position)){
                 food = new Food();
             }
 
             this.food = food;
-            this.foodList[this.foodCounter] = this.food;
+            this.foodList.push(this.food);
         }
     }
 
@@ -133,11 +155,17 @@ class Snake{
     // ===============================================================================
 
     move(){
-        this.age++;
-        this.remainingLife--;
+        if(this.type == AI_LEARNING){
+            this.age++;
+            this.remainingLife--;
+        }
         
-        if(collideWithFood(this.head)) {
-            eatFood();
+        if(this.collideWithFood(this.head)) {
+            this.eatFood();
+        }
+
+        if(strategy == A_STAR){
+            this.decideMove();
         }
 
         this.shiftBody();
@@ -169,14 +197,14 @@ class Snake{
     }
 
     moveLeft(){
-        if(this.velocity.x === blockSize){
+        if(this.velocity.x !== blockSize){
             this.velocity.x = -blockSize;
             this.velocity.y = 0;
         }
     }
 
     moveRight(){
-        if(this.velocity.x === -blockSize){
+        if(this.velocity.x !== -blockSize){
             this.velocity.x = blockSize;
             this.velocity.y = 0;
         }
@@ -195,11 +223,11 @@ class Snake{
     }
 
     collideWithWall(position){
-        return (position.x < 0 || position.x >= width || position.y < 0 || y >= position.height);
+        return (position.x < 0 || position.x >= width || position.y < 0 || position.y >= height);
     }
 
     collideWithFood(position){
-        return this.food.equals(position);
+        return this.food.position.equals(position);
     }
 
 
@@ -222,7 +250,7 @@ class Snake{
     }
 
     // ===============================================================================
-    //                              Decision Making
+    //                              Genetic Algorithm Strategy
     // ===============================================================================
 
     think(){
@@ -235,7 +263,6 @@ class Snake{
                 maxIndex = i;
             }
         }
-
         switch(maxIndex){
             case 0 : this.moveUp();         break; 
             case 1 : this.moveDown();       break;
@@ -245,6 +272,7 @@ class Snake{
     }
 
     see(){
+        this.vision = [];
         let i = 0;
         let result = [];
         for(let direction of directions){
@@ -266,12 +294,9 @@ class Snake{
         resultInThisDirection[1] = 0;
 
         // While we encounter wall in this direction
-        while(!this.collideWithWall(positionToSee.x, positionToSee.y)){
+        while(!this.collideWithWall(positionToSee)){
             if(!encounteredFood && this.collideWithFood(positionToSee)){
                 encounteredFood = true;
-                if(this.replaySnake){
-                    console.log("Saw food ", this.isAlive);
-                }
                 resultInThisDirection[0] = 1;
             }
             if(!encounteredTail && this.collideWithBody(positionToSee)){
@@ -291,6 +316,69 @@ class Snake{
     }
 
     // ===============================================================================
+    //                             A Star Strategy
+    // ===============================================================================
+
+    checkIsPathSafe(){
+        this.virtualSnake = new VirtualSnake(this.head, this.body, this.food, this.velocity);
+        this.virtualSnake.findPathToFood();
+        if(!this.virtualSnake.pathToFoodExists){
+            return false;
+        }
+        while(!this.virtualSnake.collideWithFood()) {
+            this.virtualSnake.move();
+        }
+        this.virtualSnake.eatFood();
+        this.virtualSnake.findEscapePath();
+        
+        return this.virtualSnake.escapePathExists;
+    }
+
+    decideMove(){
+        // AI Code Goes here
+        if(this.pathIndex === this.path.length){
+            if(this.checkIsPathSafe()){
+                this.path = this.virtualSnake.path;
+                this.pathIndex = 0;
+            }
+            else{
+                // Chase Tail
+                let tail = this.body[this.body.length - 1];
+                let pathFinder = new AStar(this.head, tail);
+                pathFinder.grid.setObstacles(this.head, this.body, true);
+                pathFinder.findPath();
+                if(pathFinder.targetFound){
+                    this.path = pathFinder.path;
+                    this.pathIndex = 0;
+                }
+                else{
+                    // MARK :- Coil Around Till Safe Path is Found
+                    this.coiling = true;
+                }
+            }
+        }
+
+        if(this.path.length !== 0 && !this.coiling){
+            let nextMove = this.path[this.pathIndex];
+            let headI = this.head.x/blockSize;
+            let headJ = this.head.y/blockSize;
+            if(nextMove.i === headI + 1){
+                this.moveRight();
+            }
+            else if(nextMove.i === headI - 1){
+                this.moveLeft();
+            }
+            else if(nextMove.j === headJ - 1){
+                this.moveUp();
+            }
+            else if(nextMove.j === headJ + 1){
+                this.moveDown();
+            }
+            this.pathIndex++;
+        }
+    }
+
+    // ===============================================================================
     //                            Genetic Manipulation
     // ===============================================================================
 
@@ -298,7 +386,7 @@ class Snake{
         let clonedBrain = this.brain.clone();
         let clonedSnake;
         if(replay){
-            clonedSnake = new Snake(clonedBrain, cloneVectorList(this.foodList));   
+            clonedSnake = new Snake(clonedBrain, Food.cloneList(this.foodList));   
         }
         else{
             clonedSnake = new Snake(clonedBrain);
@@ -320,7 +408,7 @@ class Snake{
         if(this.collideWithBody(this.head) || this.collideWithWall(this.head)){
             this.isAlive = false;
         }
-        if(this.remainingLife <= 0){
+        if(this.snakeType == AI_LEARNING && this.remainingLife <= 0){
             this.isAlive = false;
         }
     }

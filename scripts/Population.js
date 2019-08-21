@@ -1,24 +1,33 @@
 class Population{
-    constructor(popCount, mutationRate){
-        this.popCount = popCount;
+    constructor(populationCount, mutationRate){
+        this.populationCount = populationCount;
         this.mutationRate = mutationRate;
 
-        this.finished = false;
         this.population = [];
-        this.bestInCurrentGeneration;
-        this.bestOfAll;
         this.generations = 0;
-        this.bestScore = 0;
-        this.maxFitnessInCurrentGeneration = 0;
 
-        this.allDead = false;
+        this.currentBestSnake;
+        this.globalBestSnake;
 
-        this.initializePopulation()
+        this.globalBestFitness = 0;
+        this.currentBestFitness = 0;
+
+        this.allSnakesDead = false;
+
+        for(let i = 0; i < this.populationCount; i++){
+            this.population[i] = new Snake();
+            this.population[i].type = AI_LEARNING;
+        }
     }
 
-    initializePopulation(){
-        for(let i = 0; i < this.popCount; i++){
-            this.population[i] = new Snake();
+    // This function runs the simulation
+    runSimulation(showOnDisplay){
+        this.allSnakesDead = true;
+        for(let member of this.population){
+            member.runSimulation(showOnDisplay);
+            if(member.isAlive){
+                this.allSnakesDead = false;
+            }
         }
     }
 
@@ -26,23 +35,27 @@ class Population{
     calcFitness(){
         // Calculate max fitness and sum of fitness of all memebers
         let maxFitness = 0;
-        let maxFitnessIndex = 0;
+        let index = 0;
         let sum = 0;
-        for(let i = 0; i < this.popCount; i++){
+        for(let i = 0; i < this.populationCount; i++){
             this.population[i].calcFitness();
             sum += this.population[i].fitness;
             if(this.population[i].fitness > maxFitness){
                 maxFitness = this.population[i].fitness;
-                maxFitnessIndex = i;
+                index = i;
             }
         }
 
-        this.maxFitnessInCurrentGeneration = maxFitness;
-        this.maxFitnessIndex = maxFitnessIndex;
-
         // Save the best member form current generation before creating next Generation
-        this.bestInCurrentGeneration = this.population[this.maxFitnessIndex].clone();
+        this.currentBestFitness = maxFitness;
+        this.currentBestSnake = this.population[index].clone(true);
     
+        // Check if this generation can break records
+        if(this.currentBestFitness > this.globalBestFitness){
+            this.globalBestFitness = this.currentBestFitness;
+            this.globalBestSnake = this.population[index].clone();
+        }
+
         // Calculate the percentage of being selected as parent for next Generation
         for(let member of this.population){
             member.calcPercentageFitness(sum);
@@ -53,8 +66,8 @@ class Population{
     createNewGeneration(){
         let newPopulation = [];
         
-        newPopulation[0] = this.bestInCurrentGeneration.clone();
-        for(let i = 1; i < this.popCount; i++){
+        newPopulation[0] = this.globalBestSnake.clone();
+        for(let i = 0; i < this.populationCount; i++){
             // Select parent
             let parent1 = this.chooseParent();
             let parent2 = this.chooseParent();
@@ -67,13 +80,11 @@ class Population{
 
             // Add this child to population
             newPopulation[i] = child;
+            newPopulation[i].type = AI_LEARNING;
         }
         this.population = newPopulation;
-        generations.innerHTML = this.generations;
-        score.innerHTML = 0;
         this.generations++;
-        this.allDead = false;
-        // generateFood(true);
+        this.allSnakesDead = false;
     }
 
 
@@ -81,45 +92,17 @@ class Population{
     chooseParent(){
         let index = Math.random()*100;
         let percentTillNow = 0;
-        for(let i = 0; i < this.popCount; i++){
+        for(let i = 0; i < this.populationCount; i++){
             percentTillNow += this.population[i].percentageFitness;
             if(index < percentTillNow){
                 return this.population[i];
             }
         }
-        return this.population[this.popCount - 1];
-    }
-
-    // This function checks if we have reached the target
-    evaluate(){
-        // Check if this generation can break records
-        if(this.maxFitnessInCurrentGeneration > this.bestScore){
-            this.bestScore = this.maxFitnessInCurrentGeneration;
-            this.bestOfAll = this.population[this.maxFitnessIndex].clone();
-        }
-    }
-
-    // This function runs the simulation
-    run(showOnDisplay){
-        this.allDead = true;
-        for(let member of this.population){
-            member.run(showOnDisplay);
-            if(member.isAlive){
-                this.allDead = false;
-            }
-        }
+        return this.population[this.populationCount - 1];
     }
 
     // This function displays the best memeber of previous generation
     showBest(){
-        this.bestInCurrentGeneration.run(true);
+        this.currentBestSnake.runSimulation(true);
     }
-}
-
-function cloneVectorList(list){
-    let newList = [];
-    for(let vector of list){
-        newList.push(vector.copy());
-    }
-    return newList;
 }

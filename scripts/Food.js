@@ -17,9 +17,15 @@ class Food{
 
     clone() {
         let clonedFood = new Food();
-        clonedFood.position.x = this.position.x;
-        clonedFood.position.y = this.position.y;
-        
+        clonedFood.position = this.position.copy();
         return clonedFood;
-     }
+    }
+
+    static cloneList(foodList){
+        let newList = [];
+        for(let food of foodList){
+            newList.push(food.clone());
+        }
+        return newList;
+    }
 }

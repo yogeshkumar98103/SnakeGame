@@ -1,14 +1,19 @@
 class Matrix{
-    constructor(m,n){
+    constructor(m,n, data){
         this.rows = m;
         this.cols = n;
-        this.data = [];
-
-        // Initialise Matrix to 0
-        for(let i = 0; i < m; i++){
-            this.data.push([]);
-            for(let j = 0; j < n; j++){
-                this.data[i].push(0);
+        
+        if(data){
+            this.data = data;
+        }
+        else{
+            this.data = [];
+            // Initialise Matrix to 0
+            for(let i = 0; i < m; i++){
+                this.data.push([]);
+                for(let j = 0; j < n; j++){
+                    this.data[i].push(0);
+                }
             }
         }
     }
@@ -28,11 +33,6 @@ class Matrix{
         })
     }
 
-    scale(k){
-        this.map((val) => {
-            return val * k;
-        })
-    }
     static multiply(mat1, mat2){
         if(mat1.cols === mat2.rows){
             let matrix = new Matrix(mat1.rows, mat2.cols);
@@ -66,54 +66,6 @@ class Matrix{
         }
     }
 
-    add(mat){
-        if(this.rows === mat.rows && this.cols === mat.cols){
-            this.map((val, i, j) => {
-                return val + mat.data[i][j];
-            });
-        }
-        else{
-            console.log("Matrix are not compatible for addition")
-        }
-    }
-
-    subtract(mat){
-        if(this.rows === mat.rows && this.cols === mat.cols){
-            this.map((val, i, j) => {
-                return val - mat.data[i][j];
-            });
-        }
-        else{
-            console.log("Matrix are not compatible for addition");
-        }
-    }
-
-    static subtract(mat1, mat2){
-        if(mat1.rows === mat2.rows && mat1.cols === mat2.cols){
-            let matrix = new Matrix(mat1.rows, mat1.cols);
-            for(let i = 0; i < matrix.rows; i++){
-                for(let j = 0; j < matrix.cols; j++){
-                    matrix.data[i][j] = mat1.data[i][j] - mat2.data[i][j];
-                }
-            }
-
-            return matrix;
-        }
-        else{
-            console.log("Matrix are not compatible for addition")
-        }
-    }
-
-    static transpose(mat){
-        let matrix = new Matrix(mat.cols, mat.rows);
-        for(let i = 0; i < mat.cols; i++){
-            for(let j = 0; j < mat.rows; j++){
-                matrix.data[i][j] = mat.data[j][i];
-            }
-        }
-        return matrix;
-    }
-
     static convertToVector(arr){
         let vector = new Matrix(arr.length,1);
         for(let i = 0; i < arr.length; i++){
@@ -132,20 +84,9 @@ class Matrix{
         return arr;
     }
 
-    static elementwiseProduct(mat1, mat2){
-        if(mat1.rows === mat2.rows && mat1.cols === mat2.cols){
-            let matrix = new Matrix(mat1.rows, mat2.cols);
-            for(let i = 0; i < matrix.cols; i++){
-                for(let j = 0; j < matrix.rows; j++){
-                    matrix.data[i][j] = mat1.data[j][i] * mat2.data[j][i];
-                }
-            }
-            return matrix;
-        }
-        else{
-            console.log("Matrix are not compatible for element wise multiplication");
-        }
-    }
+    // ===============================================================================
+    //                            Genetic Manipulation
+    // ===============================================================================
 
     clone(){
         let clonedMatrix = new Matrix(this.rows, this.cols);
@@ -160,9 +101,8 @@ class Matrix{
     crossOver(partner){
         let childMatrix = new Matrix(this.rows, this.cols);
       
-        let randR = Math.floor(Math.random() * rows);
-        let randC = Math.floor(Math.random() * cols);
-        
+        let randR = Math.floor(Math.random() * this.rows);
+        let randC = Math.floor(Math.random() * this.cols);
         for(let i = 0; i < this.rows; i++) {
             for(let j = 0;  j < this.cols; j++) {
                 if((i  < randR) || (i == randR && j <= randC)) {
@@ -179,12 +119,10 @@ class Matrix{
         this.map((val) => {
             if(Math.random() < mutationRate){
                 let newVal = val + randomGaussian(0,amount);
-                if(newVal > 1){
-                    newVal = 1;
-                }
-                else if(newVal < -1){
-                    newVal = -1;
-                }
+
+                if(newVal > 1) newVal = 1;
+                else if(newVal < -1) newVal = -1;
+
                 return newVal;
             }
             return val;

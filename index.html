@@ -17,6 +17,22 @@
 
 <body>
     <span id = "container">
+        <div id = "strategy-selector">
+            <div id = "mode">
+                <select type="selector" name = "mode">
+                    <option value = "Human">Human</option>
+                    <option value = "AI">AI</option>
+                </select>
+                <label for = "mode" >Select Mode</label>
+            </div>
+            <div id = "strategy">
+                <select type="selector" name = "mode">
+                    <option value = "Human">Genetic Algorithm</option>
+                    <option value = "AI">A Star Path Finding</option>
+                </select>
+                <label for = "mode" >Select Strategy</label>
+            </div>
+        </div>
         <span id = "state-label" class = "text center">Game Over</span> 
         <span id = "highest-score-text" class = "text center">Highest Score : <span id = "highest-score" class = "text">0</span></span>
         <span id = "game-score" class = "center">
@@ -25,7 +41,7 @@
         </span>
         <button id = "play-again" class = "text center" onclick = "play()" >Play Again</button>
         <span id = "generation-info" class = "text center">
-            <span class = "text center">Generation : <span id = "generation" class = "text">0</span></span>
+            <span id = "generation-text" class = "text center">Generation : <span id = "generation" class = "text">0</span></span>
         </span>
         <span class="slider-container center">
             <span class = "text speed-text"> Speed </span>
@@ -36,10 +52,16 @@
 
     <div id = "snake-canvas"></div>
 </body>
-
 <script src = "scripts/Food.js"></script>
 <script src = "scripts/Snake.js"></script>
+<script src = "scripts/Virtual Snake.js"></script>
 <script src = "scripts/Population.js"></script>
 <script src = "scripts/main.js"></script>
+
+
+<script src = "scripts/A Star/A Star.js"></script>
+<script src = "scripts/A Star/Binary Heap.js"></script>
+<script src = "scripts/A Star/Grid.js"></script>
+<script src = "scripts/A Star/Node.js"></script>
 
 </html>
