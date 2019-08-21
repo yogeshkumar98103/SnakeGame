@@ -18,19 +18,13 @@
 <body>
     <span id = "container">
         <div id = "strategy-selector">
-            <div id = "mode">
+            <div class = "mode">
                 <select type="selector" name = "mode">
-                    <option value = "Human">Human</option>
-                    <option value = "AI">AI</option>
+                    <option value = "0">Select Mode</option>
+                    <option value = "1">Human</option>
+                    <option value = "2">AI Mode</option>
+                    <option value = "3">Carnage Mode</option>
                 </select>
-                <label for = "mode" >Select Mode</label>
-            </div>
-            <div id = "strategy">
-                <select type="selector" name = "mode">
-                    <option value = "Human">Genetic Algorithm</option>
-                    <option value = "AI">A Star Path Finding</option>
-                </select>
-                <label for = "mode" >Select Strategy</label>
             </div>
         </div>
         <span id = "state-label" class = "text center">Game Over</span> 
@@ -57,6 +51,7 @@
 <script src = "scripts/Virtual Snake.js"></script>
 <script src = "scripts/Population.js"></script>
 <script src = "scripts/main.js"></script>
+<script src = "scripts/SideBar.js"></script>
 
 
 <script src = "scripts/A Star/A Star.js"></script>
