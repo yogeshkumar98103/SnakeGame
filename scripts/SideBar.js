@@ -1,64 +1,102 @@
-let mode = document.querySelector(".mode");
-let selElmnt = mode.getElementsByTagName("select")[0];
+selector = document.querySelector('.selector')
+selector.selectedIndex = mode
+selector.addEventListener('change', ()=>{
+    mode = selector.selectedIndex;
+    initialize();
+    modeSetup();
+})
 
-let a = document.createElement("div");
-let b = document.createElement("div");
-
-a.setAttribute("class", "select-selected");
-b.setAttribute("class", "select-items select-hide");
-
-a.innerHTML = selElmnt.options[selElmnt.selectedIndex].innerHTML;
-mode.appendChild(a);
-
-for (let j = 1; j < selElmnt.length; j++) {
-    let c = document.createElement("div");
-    c.innerHTML = selElmnt.options[j].innerHTML;
-    c.addEventListener("click", function(e) {
-        var y, i, k, s, h;
-        s = this.parentNode.parentNode.getElementsByTagName("select")[0];
-        h = this.parentNode.previousSibling;
-        for (let i = 0; i < s.length; i++) {
-            if (s.options[i].innerHTML == this.innerHTML) {
-                s.selectedIndex = i;
-                h.innerHTML = this.innerHTML;
-                y = this.parentNode.getElementsByClassName("same-as-selected");
-                for (k = 0; k < y.length; k++) {
-                    y[k].removeAttribute("class");
-                }
-                this.setAttribute("class", "same-as-selected");
-                break;
-            }
-        }
-        h.click();
-    });
-    b.appendChild(c);
-}
-
-mode.appendChild(b);
-a.addEventListener("click", function(e) {
-e.stopPropagation();
-closeAllSelect(this);
-this.nextSibling.classList.toggle("select-hide");
-this.classList.toggle("select-arrow-active");
+// Overrride default dehaviour with keys
+window.addEventListener("keydown", function(event) {
+    // arrow key
+    if ([32, 37, 38, 39, 40].indexOf(event.keyCode) > -1) {
+        event.preventDefault();
+    }
 });
 
-
-function closeAllSelect(elmnt) {
-  var mode, y, i, arrNo = [];
-  mode = document.getElementsByClassName("select-items");
-  y = document.getElementsByClassName("select-selected");
-  for (i = 0; i < y.length; i++) {
-    if (elmnt == y[i]) {
-      arrNo.push(i)
-    } else {
-      y[i].classList.remove("select-arrow-active");
-    }
-  }
-  for (i = 0; i < mode.length; i++) {
-    if (arrNo.indexOf(i)) {
-      mode.classList.add("select-hide");
-    }
-  }
+function handleText(){
+    highestScoreText.innerHTML = population.globalBestScore || 0;
+    score.innerHTML = 3;
+    generations.innerHTML = population.generations - 1;
 }
 
-document.addEventListener("click", closeAllSelect);
+function loadHighestScore(){
+    let hs = localStorage.getItem("highestScore");
+    if(hs != undefined){
+        highestScoreText.innerHTML = hs;
+    }
+}
+
+function setupText(){
+    score = document.getElementById('score');
+    stateLabel = document.getElementById('state-label');
+    playButton = document.getElementById('play-again');
+    highestScoreText = document.getElementById('highest-score');
+    generations = document.getElementById('generation');
+    generationText = document.getElementById('generation-text');
+}
+
+
+function pauseGameSetup(){
+    if(pauseGameTriggered && !gamePaused){
+        stateLabel.style.visibility = "visible";
+        stateLabel.innerHTML = "Game Paused";
+        playButton.style.visibility = "visible";
+        playButton.innerHTML = "Resume";
+        stateLabel.style.color = "red";
+        gamePaused = true;
+    }
+}
+
+// These are used for blinking text;
+let counter = 1;
+let textColor;
+function gameOverSetup(){
+    if(gameOverTriggered && !gameOver){
+        stateLabel.style.visibility = "visible";
+        stateLabel.innerHTML = "Game Over";
+        playButton.style.visibility = "visible";
+        playButton.innerHTML = "Play Again";
+
+        // Handle Highest Score
+        highestScore = localStorage.getItem("highestScore");
+        if(highestScore != undefined){
+            if(parseInt(highestScore) < parseInt(score.innerHTML)){
+                localStorage.setItem("highestScore", score.innerHTML);
+                highestScoreText.innerHTML = score.innerHTML;
+            }
+        }
+        else{
+            highestScoreText.innerHTML = score.innerHTML;
+            localStorage.setItem("highestScore", score.innerHTML);
+        }
+
+        gameOver = true;    
+    }
+    if(gameOver){
+        if(counter >= 1 && counter <= fRate/2){
+            textColor = "red"
+        }
+        else{
+            textColor = "white";
+        }
+        counter = (counter + 1) % fRate;
+        stateLabel.style.color = textColor;
+    }
+}
+
+// -------------------- Speed Slider -------------------------
+var inputTimer;
+var doneInterval = 300;
+
+var slider = document.getElementById("myRange");
+slider.oninput = function(){
+    clearTimeout(inputTimer);
+    inputTimer = setTimeout(newSpeed, doneInterval);
+}
+
+function newSpeed(){
+    speed = slider.value
+    fRate = speed * 10;
+    fRateChanged = true;
+}

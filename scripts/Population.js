@@ -15,16 +15,17 @@ class Population{
         this.allSnakesDead = false;
 
         for(let i = 0; i < this.populationCount; i++){
-            this.population[i] = new Snake();
+            let snakeBrain = new NeuralNetwork([24,16,16,4],learningRate);
+            this.population[i] = new LearningSnake(snakeBrain);
             this.population[i].type = AI_LEARNING;
         }
     }
 
     // This function runs the simulation
-    runSimulation(showOnDisplay){
+    runSimulation(){
         this.allSnakesDead = true;
         for(let member of this.population){
-            member.runSimulation(showOnDisplay);
+            member.run();
             if(member.isAlive){
                 this.allSnakesDead = false;
             }
@@ -80,7 +81,6 @@ class Population{
 
             // Add this child to population
             newPopulation[i] = child;
-            newPopulation[i].type = AI_LEARNING;
         }
         this.population = newPopulation;
         this.generations++;
@@ -103,6 +103,6 @@ class Population{
 
     // This function displays the best memeber of previous generation
     showBest(){
-        this.currentBestSnake.runSimulation(true);
+        this.currentBestSnake.run();
     }
 }

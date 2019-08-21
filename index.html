@@ -16,39 +16,52 @@
 </head>
 
 <body>
-    <span id = "container">
-        <div id = "strategy-selector">
-            <div class = "mode">
-                <select type="selector" name = "mode">
-                    <option value = "0">Select Mode</option>
-                    <option value = "1">Human</option>
-                    <option value = "2">AI Mode</option>
-                    <option value = "3">Carnage Mode</option>
+    <section id = "container">
+        <!-- Mode Selector -->
+        <div class = "mode">
+            <div class = "select-wrapper">
+                <select type="selector" name = "mode" class = "selector">
+                    <option value = "0">Human</option>
+                    <option value = "1">AI Mode</option>
+                    <option value = "2">Carnage Mode</option>
                 </select>
             </div>
         </div>
-        <span id = "state-label" class = "text center">Game Over</span> 
-        <span id = "highest-score-text" class = "text center">Highest Score : <span id = "highest-score" class = "text">0</span></span>
-        <span id = "game-score" class = "center">
+
+        <!-- Current State -->
+        <div id = "state-label" class = "text">Game Over</div> 
+
+        <!-- Score -->
+        <div id = "highest-score-text" class = "text">Highest Score : 
+            <span id = "highest-score" class = "text">0</span>
+        </div>
+        
+        <div id = "game-score" class = "">
             <div id = "score-text" class = "text">Score</div>
             <div id = "score" class = "text">0</div>
-        </span>
-        <button id = "play-again" class = "text center" onclick = "play()" >Play Again</button>
-        <span id = "generation-info" class = "text center">
-            <span id = "generation-text" class = "text center">Generation : <span id = "generation" class = "text">0</span></span>
-        </span>
-        <span class="slider-container center">
+        </div>
+
+        <button id = "play-again" class = "text" onclick = "play()" >Play Again</button>
+        
+        <div id = "generation-info" class = "text">
+            <span id = "generation-text" class = "text ">Generation : <span id = "generation" class = "text">0</span></span>
+        </div>
+
+        <div class="slider-container ">
             <span class = "text speed-text"> Speed </span>
-            <input type="range" min = "1" max = "20" value="1" class="slider" id="myRange">
-        </span>
-        <button id = "download-best" class = "text center" onclick = "downloadBest()" >Download Best</button>
-    </span>
+            <input type="range" min = "1" max = "10" value="6" class="slider" id="myRange">
+        </div>
+
+        <button id = "download-best" class = "text" onclick = "downloadBest()" >Download Best</button>
+    </section>
 
     <div id = "snake-canvas"></div>
 </body>
+<script src = "scripts/Variables.js"></script>
 <script src = "scripts/Food.js"></script>
 <script src = "scripts/Snake.js"></script>
-<script src = "scripts/Virtual Snake.js"></script>
+<script src = "scripts/AISnake.js"></script>
+<script src = "scripts/CarnageSnake.js"></script>
 <script src = "scripts/Population.js"></script>
 <script src = "scripts/main.js"></script>
 <script src = "scripts/SideBar.js"></script>
