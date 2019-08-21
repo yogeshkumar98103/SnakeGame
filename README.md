@@ -6,3 +6,5 @@ You can choose between following modes :-
 1. Against Human
 2. Genetic Algorithm
 3. A Star
+
+Working Demo: https://yogeshkumar98103.github.io/SnakeGame/
